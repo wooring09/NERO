@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from Models.users_m import User
-from Database.connection import connection, Users_coll
+from Database.connection import Basic_connection, Users_coll
 from Authenticate.hash_password import HashPassword
 from Authenticate.authenticate import authenticate, create_token
 
 user_router = APIRouter()
-user_database = connection(Users_coll)
+user_database = Basic_connection(Users_coll)
 hash_password = HashPassword()
 
 @user_router.post("/signup")
