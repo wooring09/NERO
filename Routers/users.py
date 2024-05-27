@@ -22,8 +22,8 @@ async def signup(user: User):
     
 
 @user_router.post("/signin")
-async def signin(user: OAuth2PasswordRequestForm = Depends(User)):
-    user_exists = await user_database.findOne({"email":user.email})
+async def signin(user: OAuth2PasswordRequestForm = Depends()):
+    user_exists = await user_database.findOne({"email":user.username})
     if not user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -36,6 +36,6 @@ async def signin(user: OAuth2PasswordRequestForm = Depends(User)):
         )
     token = create_token(user_exists["email"])
     return{
-        "token": token,
-        "type": "Bearer"
+        "access_token": token,
+        "token_type": "Bearer"
     }
