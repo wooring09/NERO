@@ -8,10 +8,11 @@ book_router = APIRouter()
 book_database = Basic_connection(Books_coll)
 doc_database = Docs_connection
 
-async def check_exist(database, id):
-    response = await database.findOne({"_id": ObjectId(id)})
-    return str(response)
-
+async def check(database, id):
+    check = await book_database.findOne({"_id": ObjectId(id)})
+    if not check:
+        return False
+    return True
 
 @book_router.get("/")
 async def getAll():
@@ -36,18 +37,22 @@ async def newBook(book:Book, user: str = Depends(authenticate)):
 
 @book_router.post("{book_id}/update")
 async def updatetBook(book_id, book:updateBook, user: str = Depends(authenticate)):
-    check = await check_exist(book_database, book_id)
-    if check == "None":
+    if(not check(book_database, book_id)):
         raise HTTPException(
             status_code=404,
-            detail="book with supplied id doesn't exist"
+            detail="Book with supplied id doesn't exist"
         )
     await book_database.updateOne({"_id":ObjectId(book_id)}, book)
     return "successfully updated book"
 
 @book_router.post("{book_id}/new")
 async def newDoc(book_id, doc: Document, user: str = Depends(authenticate)):
-    await doc_database.insertOne(doc)
+    if(not check(book_database, book_id)):
+        raise HTTPException(
+            status_code=404,
+            detail="Book with supplied id doesn't exist"
+        )
+    await doc_database.insertOne(book_id, doc)
     return "successfully created document"
 
 @book_router.post("{book_id}/{doc_id}/update")

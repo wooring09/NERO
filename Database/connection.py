@@ -38,10 +38,13 @@ class Basic_connection:
         return response
     
     async def updateOne(self, query, document):
-        self.model.update_one(query, {"$set":dict(document)})
+        updatedDoc = {k: v for k, v in dict(document).items() if v is not None} #value가 None이라면 key삭제
+        self.model.update_one(query, {"$set":updatedDoc})
         return
 
 class Docs_connection:    #Docs(collection) 변경 & Books(collection)의 documents값 변경
+    async def findOne(book_id, document)
+
     async def insertOne(book_id, document):
         Docs_coll.insert_one(document)
         newDoc = Docs_coll.find_one(dict(document), Docs_projection)

@@ -23,6 +23,7 @@ async def signup(user: User):
 
 @user_router.post("/signin")
 async def signin(user: OAuth2PasswordRequestForm = Depends()):
+    print(type(user.username))
     user_exists = await user_database.findOne({"email":user.username})
     if not user_exists:
         raise HTTPException(
