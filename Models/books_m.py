@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from bson.objectid import ObjectId
 
 class Document(BaseModel):
     title: str 
@@ -11,7 +12,7 @@ class Document(BaseModel):
     comments: list[str]
 
 class Doc_in_Book(BaseModel):
-    _id: str
+    _id: ObjectId
     title: str
     type: str
 

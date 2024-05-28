@@ -47,7 +47,7 @@ async def updatetBook(book_id, book:updateBook, user: str = Depends(authenticate
 
 @book_router.post("{book_id}/new")
 async def newDoc(book_id, doc: Document, user: str = Depends(authenticate)):
-    if(not check(book_database, book_id)):
+    if(not await check(book_database, book_id)):
         raise HTTPException(
             status_code=404,
             detail="Book with supplied id doesn't exist"
@@ -57,5 +57,15 @@ async def newDoc(book_id, doc: Document, user: str = Depends(authenticate)):
 
 @book_router.post("{book_id}/{doc_id}/update")
 async def updateDoc(book_id, doc_id, doc: Document, user: str = Depends(authenticate)):
+    if(not await check(book_database, book_id)):
+        raise HTTPException(
+            status_code=404,
+            detail="Book with supplied id doesn't exist"
+        )
+    if(not await check(doc_database, doc_id)):
+        raise HTTPException(
+            status_code=404,
+            detail="Document with supplied id doesn't exist"
+        )
     await doc_database.updateOne(book_id, doc_id, doc)
     return "successfully updated document"

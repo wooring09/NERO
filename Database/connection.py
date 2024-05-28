@@ -43,14 +43,16 @@ class Basic_connection:
         return
 
 class Docs_connection:    #Docs(collection) 변경 & Books(collection)의 documents값 변경
-    async def findOne(book_id, document)
+    async def findOne(doc_id):
+        response = Docs_coll.find_one({"_id":ObjectId(doc_id)})
+        return response
 
     async def insertOne(book_id, document):
-        Docs_coll.insert_one(document)
-        newDoc = Docs_coll.find_one(dict(document), Docs_projection)
+        Docs_coll.insert_one(dict(document))
+        newDoc = Docs_coll.find_one(dict(document), Docs_projection) #새 document의 _id 불러오기
         Books_coll.update_one(
-            {"_id":book_id},
-            {"$set": {"documents": {"$push": newDoc}}}
+            {"_id":ObjectId(book_id)},
+            {"$push": {"documents": newDoc}}
         )
         
     async def updateOne(book_id, doc_id, document):
