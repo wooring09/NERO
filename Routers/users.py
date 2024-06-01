@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from Models.users_m import User
-from Database.connection import Basic_connection, Users_coll
+from Database.connection import Database, Users_coll
 from Authenticate.hash_password import HashPassword
 from Authenticate.authenticate import authenticate, create_token
 
 user_router = APIRouter()
-user_database = Basic_connection(Users_coll)
+user_database = Database(Users_coll)
 hash_password = HashPassword()
 
 @user_router.post("/signup")
@@ -23,7 +23,6 @@ async def signup(user: User):
 
 @user_router.post("/signin")
 async def signin(user: OAuth2PasswordRequestForm = Depends()):
-    print(type(user.username))
     user_exists = await user_database.findOne({"email":user.username})
     if not user_exists:
         raise HTTPException(
