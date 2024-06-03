@@ -51,6 +51,52 @@ class Database:
         Docs_Id = [ObjectId(id) for id in Docs_str]
         Docs_coll.delete_many({"_id": {"$in": Docs_Id}})
         Books_coll.delete_one({"_id":ObjectId(book_id)})
+        return
+
+    async def followUser(self, user, target):
+        Users_coll.update_one(
+            {"email":user},
+            {"$push":{"followingUsers":target}}
+        )
+        Users_coll.update_one(
+            {"email":target},
+            {"$push":{"followers":user}}
+        )
+        return
+    
+    async def unfollowUser(self, user, target):
+        Users_coll.update_one(
+            {"email":user},
+            {"$pull":{"followingUsers":target}}
+        )
+        Users_coll.update_one(
+            {"email":target},
+            {"$pull":{"followers":user}}
+        )
+        return
+    
+    async def followBook(self, user, book_id):
+        Books_coll.update_one(
+            {"email":user},
+            {"$push":{"followingBooks":book_id}}
+        )
+        Books_coll.update_one(
+            {"_id":ObjectId(book_id)},
+            {"$push":{"writers":user}}
+        )
+        return
+    
+    async def unfollowBook(self, user, book_id):
+        Books_coll.update_one(
+            {"email":user},
+            {"$pull":{"followingBooks":book_id}}
+        )
+        Books_coll.update_one(
+            {"_id":ObjectId(book_id)},
+            {"$pull":{"writers":user}}
+        )
+        return
+
 
 class docDatabase:    #Docs(collection) 변경 & Books(collection)의 documents값 변경
     async def findOne(self, doc_id):

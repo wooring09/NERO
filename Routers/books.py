@@ -184,3 +184,37 @@ async def deleteDoc(book_id, doc_id, user: str = Depends(authenticate)): #Delete
     
     await doc_database.deleteOne(book_id, doc_id)
     return "successfully deleted document"
+
+@book_router.post("/{book_id}/follow")
+async def followbook(book_id, user:str = Depends(authenticate)):
+    book = await book_database.findOne({"_id":ObjectId(book_id)})
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
+    writers = dict(book)["writers"]
+    if user in writers:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Already followed"
+        )
+    await book_database.followBook(user, book_id)
+    return "successfully followed"
+
+@book_router.post("/{book_id}/unfollow")
+async def unfollowbook(book_id, user:str = Depends(authenticate)):
+    book = await book_database.findOne({"_id":ObjectId(book_id)})
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found"
+        )
+    writers = dict(book)["writers"]
+    if not book in writers:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Already unfollowed"
+        )    
+    await book_database.unfollowBook(user, book_id)
+    return "successfully unfollowed"

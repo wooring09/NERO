@@ -6,6 +6,7 @@ class User(BaseModel):
     name:Optional[str] = None
     email:str
     password:str
+    followers:Optional[list[str]] = None
     followingBooks:Optional[list[str]] = None
     followingUsers:Optional[list[str]] = None
     

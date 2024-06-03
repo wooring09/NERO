@@ -19,7 +19,6 @@ async def signup(user: User):
     user.password = hash_password.hash(user.password)
     await user_database.insertOne(user)
     return "successfully signed up"
-    
 
 @user_router.post("/signin")
 async def signin(user: OAuth2PasswordRequestForm = Depends()):
@@ -39,3 +38,45 @@ async def signin(user: OAuth2PasswordRequestForm = Depends()):
         "access_token": token,
         "token_type": "Bearer"
     }
+
+@user_router.post("/{name}/follow")
+async def followuser(name, user:str = Depends(authenticate)):
+    target = await user_database.findOne({"name":name})
+    if not target:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="user not found"
+        )
+    email = dict(target)["email"]
+    followers = dict(await user_database.findOne({"email":user}))["followers"]
+    if email == user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="can't follow yourself"
+        )
+    if email in followers:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="already followed"
+        )
+        
+    await user_database.followUser(user, email)
+    return "succesfully followed"
+
+@user_router.post("/{name}/unfollow")
+async def unfollowuser(name, user:str = Depends(authenticate)):
+    target = await user_database.findOne({"name":name})
+    if not target:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="user not found"
+        )
+    email = dict(target)["email"]
+    following = dict(await user_database.findOne({"email":user}))["followingUsers"]
+    if not email in following:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="already unfollowed"
+        )
+    await user_database.unfollowUser(user, email)
+    return "succesfully unfollowed"
