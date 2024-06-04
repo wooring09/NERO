@@ -47,7 +47,7 @@ async def signin(user: OAuth2PasswordRequestForm = Depends()):
         "token_type": "Bearer"
     }
 
-@user_router.post("/update")
+@user_router.put("/update")
 async def updateuser(data: updateUser, user:str = Depends(authenticate)):
     if await user_database.findOne({"name":data.name}):
         raise HTTPException(

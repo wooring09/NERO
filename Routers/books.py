@@ -43,7 +43,7 @@ async def getBook(book_id): #Read
         )
     return str(book)
 
-@book_router.post("{book_id}/update")
+@book_router.put("{book_id}/update")
 async def updatetBook(book_id, book:updateBook, user: str = Depends(authenticate)): #Update
     check = await book_database.findOne({"_id": ObjectId(book_id)})
     if not check:
@@ -123,7 +123,7 @@ async def getBook(book_id, doc_id): #Read
     
     return str(checkdoc)
 
-@book_router.post("{book_id}/{doc_id}/update")
+@book_router.put("{book_id}/{doc_id}/update")
 async def updateDoc(book_id, doc_id, doc: updateDocument, user: str = Depends(authenticate)): #Update
     checkdoc = await doc_database.findOne(doc_id)
     if not checkdoc:
