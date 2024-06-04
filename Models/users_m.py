@@ -9,4 +9,7 @@ class User(BaseModel):
     followers:Optional[list[str]] = None
     followingBooks:Optional[list[str]] = None
     followingUsers:Optional[list[str]] = None
+
+class updateUser(BaseModel):
+    name:Optional[str] = None
     

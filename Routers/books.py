@@ -211,7 +211,7 @@ async def unfollowbook(book_id, user:str = Depends(authenticate)):
             detail="Book not found"
         )
     writers = dict(book)["writers"]
-    if not book in writers:
+    if not user in writers:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Already unfollowed"

@@ -52,6 +52,9 @@ class Database:
         Docs_coll.delete_many({"_id": {"$in": Docs_Id}})
         Books_coll.delete_one({"_id":ObjectId(book_id)})
         return
+    
+    # async def deleteUser(self, email):
+        
 
     async def followUser(self, user, target):
         Users_coll.update_one(
@@ -76,7 +79,7 @@ class Database:
         return
     
     async def followBook(self, user, book_id):
-        Books_coll.update_one(
+        Users_coll.update_one(
             {"email":user},
             {"$push":{"followingBooks":book_id}}
         )
@@ -87,7 +90,7 @@ class Database:
         return
     
     async def unfollowBook(self, user, book_id):
-        Books_coll.update_one(
+        Users_coll.update_one(
             {"email":user},
             {"$pull":{"followingBooks":book_id}}
         )

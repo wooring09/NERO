@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from Models.users_m import User
+from Models.users_m import User, updateUser
 from Database.connection import Database, Users_coll
 from Authenticate.hash_password import HashPassword
 from Authenticate.authenticate import authenticate, create_token
@@ -11,12 +11,20 @@ hash_password = HashPassword()
 
 @user_router.post("/signup")
 async def signup(user: User):
-    if await user_database.findOne({"email":user.email}) != None:
+    if await user_database.findOne({"email":user.email}):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="user with the email already exists"
         )
+    if await user_database.findOne({"name":user.name}):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="user with the name already exists"
+        )
     user.password = hash_password.hash(user.password)
+    user.followers = []
+    user.followingUsers = []
+    user.followingBooks = []
     await user_database.insertOne(user)
     return "successfully signed up"
 
@@ -38,6 +46,29 @@ async def signin(user: OAuth2PasswordRequestForm = Depends()):
         "access_token": token,
         "token_type": "Bearer"
     }
+
+@user_router.post("/update")
+async def updateuser(data: updateUser, user:str = Depends(authenticate)):
+    if await user_database.findOne({"name":data.name}):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="user with the name already exists"
+        )
+    await user_database.updateOne({"email":user}, data)
+    return "successfully updated"
+
+@user_router.delete("/resign")
+async def resign(password, user:str = Depends(authenticate)):
+    pw_exist = dict(await user_database.findOne({"email":user}))["password"]
+    if not hash_password.verify(password, pw_exist):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="password is not correct"
+        )
+    # user_database.deleteUser()
+    # return "successfully resigned"
+    return "not yet made"
+    
 
 @user_router.post("/{name}/follow")
 async def followuser(name, user:str = Depends(authenticate)):
