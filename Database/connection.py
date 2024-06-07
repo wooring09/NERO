@@ -24,21 +24,6 @@ class Database:
     def __init__(self, collection):
         self.model = collection
 
-    #Convert id
-    async def id_to_OBJid(self, id:str):
-        body = await self.model.find_one({"id_":id})
-        if not body:
-            return False
-        objid = body.id
-        return objid
-    
-    async def OBJid_to_id(self, objid:PydanticObjectId):
-        body = await self.model.get(objid)
-        if not body:
-            return False
-        id = body.id_
-        return id
-
     #Basic Database
     async def insert(self, body:Document):
         await body.insert()
@@ -151,14 +136,14 @@ class Database:
         book = await Book.find({"id_": book_id})
         if not book:
             return False
-        await book.update({"pull":{"documents": str(doc_id)}})
+        await book.update({"$pull":{"documents": str(doc_id)}})
 
     #Cell Database
     async def insertCell(self, doc_id:PydanticObjectId, cell:Cell):
         newcell = await cell.create()
         if not newcell:
             return False
-        cell_id = str(newcell._id)
+        cell_id = str(newcell.id)
 
         doc = await Doc.get(doc_id)
         if not doc:
@@ -171,9 +156,10 @@ class Database:
         cell = await Cell.get(cell_id)
         if not cell:
             return False
-        cell.delete()
+        await cell.delete()
 
-        doc = await Book.get(doc_id)
+        doc = await Doc.get(doc_id)
         if not doc:
             return False
-        await doc.update({"pull":{"cells": str(cell_id)}})
+        await doc.update({"$pull":{"cells": str(cell_id)}})
+        return True

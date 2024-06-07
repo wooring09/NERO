@@ -6,12 +6,11 @@ from beanie import Document
 #Document Model
 class Cell(Document):
     title: str
-    parentDoc: str
+    parentDoc: Optional[str] = None
     contents: str
 
 class Doc(Document):
     title: str 
-    writers: Optional[list[str]] = []
     type: str
     parentBook: Optional[str] = None
     related: Optional[list[str]] = []
@@ -41,3 +40,11 @@ class update_doc(BaseModel):
     title: Optional[str] = None
     type: Optional[str] = None
     related: Optional[list[str]] = None
+
+class new_cell(BaseModel):
+    title: str
+    contents: str
+
+class update_cell(BaseModel):
+    title: Optional[str] = None
+    contents: Optional[str] = None
