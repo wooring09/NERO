@@ -1,15 +1,23 @@
 from pydantic import BaseModel
 from typing import Optional
-from bson.objectid import ObjectId
+from beanie import Document
 
-class User(BaseModel):
-    name:Optional[str] = None
-    email:str
+class User(Document):
+    id_:str
     password:str
-    followers:Optional[list[str]] = None
-    followingBooks:Optional[list[str]] = None
-    followingUsers:Optional[list[str]] = None
+    name:str
+    email:Optional[str] = None
+    followers:Optional[list[str]] = []
+    followingBooks:Optional[list[str]] = []
+    followingUsers:Optional[list[str]] = []
 
-class updateUser(BaseModel):
+class sign_up(BaseModel):
+    id_:str
+    password:str
+    name:str
+
+class update_user(BaseModel):
+    id_:Optional[str] = None
+    password:Optional[str] = None
     name:Optional[str] = None
     

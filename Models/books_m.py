@@ -1,31 +1,43 @@
 from pydantic import BaseModel
 from typing import Optional
-from bson.objectid import ObjectId
 
-class Document(BaseModel):
-    title: str 
-    writers: Optional[list[str]] = None
-    type: str
-    parentBook: str
-    related: Optional[list[str]] = None
-    contents: str
-    comments: Optional[list[str]] = None
+from beanie import Document
 
-# class Doc_in_Book(BaseModel):
-#     _id: ObjectId
-#     title: str
-#     type: str
-
-class Book(BaseModel):
+#Document Model
+class Cell(Document):
     title: str
-    writers: list[str]
-    documents: list[str]
+    parentDoc: str
+    contents: str
 
-class updateBook(BaseModel):
+class Doc(Document):
+    title: str 
+    writers: Optional[list[str]] = []
+    type: str
+    parentBook: Optional[str] = None
+    related: Optional[list[str]] = []
+    cells: Optional[list[str]] = []
+
+class Book(Document):
+    id_: str
+    title: str
+    writers:Optional[list[str]] = []
+    documents:Optional[list[str]] = []
+
+
+#Basemodel
+class new_book(BaseModel):
+    id_: str
+    title:str
+
+class update_book(BaseModel):
+    id_: Optional[str] = None
     title: Optional[str] = None
 
-class updateDocument(BaseModel):
+class new_doc(BaseModel):
+    title: str
+    type: str
+
+class update_doc(BaseModel):
     title: Optional[str] = None
     type: Optional[str] = None
     related: Optional[list[str]] = None
-    contents: Optional[str] = None
