@@ -61,7 +61,7 @@ class Database:
         return True
     
     #follow functions
-    async def followUser(self, user_id:PydanticObjectId, target_id:PydanticObjectId):
+    async def followUser(self, user_id:str, target_id:PydanticObjectId):
         user = await User.get(user_id)
         target = await User.get(target_id)
         if not user or not target:
@@ -131,44 +131,45 @@ class Database:
         return True
 
 
-    #Document Database
-    async def insertDoc(self, book_id:PydanticObjectId, document:Doc):
-        newdoc = await document.create()
-        if not newdoc:
-            return False
-        doc_id = str(newdoc.id)
-
-        book = await Book.get(book_id)
-        if not book:
-            return False
-        
-        await book.update({"$push": {"documents": doc_id}})
+    #Index functions
+    async def setIndex_and_insert(self, body:Document):
+        max_index = await self.model.find_many({"parent": body.parent}).sort("-index").first_or_none()
+        if max_index:
+            body.index = max_index.index + 1
+        else:
+            body.index = 1
+        await body.create()
         return True
     
-    async def deleteDoc(self, book_id:str, doc_id:PydanticObjectId):
-        doc = await Doc.get(doc_id)
-        if not doc:
-            return False
-        doc.delete()
-
-        book = await Book.find({"name": book_id})
-        if not book:
-            return False
-        await book.update({"$pull":{"documents": str(doc_id)}})
+    async def setIndex_and_delete(self, id:PydanticObjectId):
+        body = await self.model.get(id)
+        index = body.index
+        others = self.model.find_many({"parent": body.parent, "index": {"$gte":index}})
+        await others.update_many({"$inc": {"index":-1}})
+        await body.delete()
+        return True
+    
+    async def resetIndex(self, id:PydanticObjectId, new_index:int):
+        body = await self.model.get(id)
+        index = body.index
+        others = self.model.find_many({"parent": body.parent, "index": {"$gte":new_index}})
+        await others.update_many({"$inc": {"index":1}})
+        await body.update({"$set":{"index":new_index}})
+        return True
 
     #Cell Database
-    async def insertCell(self, doc_id:PydanticObjectId, cell:Cell):
-        newcell = await cell.create()
-        if not newcell:
-            return False
-        cell_id = str(newcell.id)
+    # async def insertCell(self, doc_id:PydanticObjectId, cell:Cell):
+    #     newcell = await cell.create()
+    #     if not newcell:
+    #         return False
+    #     cell_id = str(newcell.id)
 
-        doc = await Doc.get(doc_id)
-        if not doc:
-            return False
+    #     doc = await Doc.get(doc_id)
+    #     if not doc:
+    #         return False
         
-        await doc.update({"$add": {"cells": cell_id}})
-        return True
+    #     await doc.update({"$add": {"cells": cell_id}})
+    #     return True
     
     async def deleteCell(self, doc_id:PydanticObjectId, cell_id:PydanticObjectId):
         cell = await Cell.get(cell_id)

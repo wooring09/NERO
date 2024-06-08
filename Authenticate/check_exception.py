@@ -10,8 +10,8 @@ async def check_existence(database, obj_id:PydanticObjectId):
         )
     return obj
 
-async def check_directory(Cobj_id:PydanticObjectId, Pobj_ids):
-    if str(Cobj_id) not in Pobj_ids:
+async def check_directory(Pobj_id:PydanticObjectId, Cobj_id:PydanticObjectId):
+    if not Pobj_id == Cobj_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="wrong directory"

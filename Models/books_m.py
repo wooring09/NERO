@@ -5,23 +5,22 @@ from beanie import Document
 
 #Document Model
 class Cell(Document):
+    index: Optional[int] = None
     title: str
-    parentDoc: Optional[str] = None
+    parent: Optional[str] = None
     contents: str
 
 class Doc(Document):
+    index: Optional[int] = None
     title: str 
     type: str
-    parentBook: Optional[str] = None
+    parent: Optional[str] = None
     related: Optional[list[str]] = []
-    cells: Optional[list[str]] = []
 
 class Book(Document):
     name: str
     title: str
     writers:Optional[list[str]] = []
-    documents:Optional[list[str]] = []
-
 
 #Basemodel
 class new_book(BaseModel):
@@ -33,6 +32,7 @@ class update_book(BaseModel):
     title: Optional[str] = None
 
 class new_doc(BaseModel):
+    index: Optional[int] = None
     title: str
     type: str
 
@@ -42,6 +42,7 @@ class update_doc(BaseModel):
     related: Optional[list[str]] = None
 
 class new_cell(BaseModel):
+    index: Optional[int] = None
     title: str
     contents: str
 

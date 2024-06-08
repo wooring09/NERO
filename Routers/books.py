@@ -71,8 +71,8 @@ async def newDoc(book_name:str, body: new_doc, user: str = Depends(authenticate)
     await check_authority(user_objid, writers)
     
     doc = Doc(**body.model_dump())
-    doc.parentBook = str(book_objid)
-    await doc_database.insertDoc(book_objid, doc)
+    doc.parent = str(book_objid)
+    await doc_database.setIndex_and_insert(book_objid, doc)
     return "successfully created document"
 
 @book_router.get("/{book_name}/{doc_id}")
@@ -91,25 +91,39 @@ async def updateDoc(book_name:str, doc_id:PydanticObjectId, body: update_doc, us
     user_objid = await convert_id(user_database, user)
     await check_existence(doc_database, doc_id)
     book = await check_existence(book_database, book_objid)
-    documents = book.documents
-    await check_directory(doc_id, documents)
+    doc = await check_existence(doc_database, doc_id)
+    await check_directory(book_objid, PydanticObjectId(doc.parent))
     writers = book.writers
     await check_authority(user_objid, writers)
     
     await doc_database.update(doc_id, body)
     return "successfully updated document"
 
-@book_router.delete("/{book_name}/{doc_id}/delete")
-async def deleteDoc(book_name, doc_id, user: str = Depends(authenticate)): #Delete
+@book_router.put("/{book_name}/{doc_id}/set_index")
+async def setBookIndex(book_name:str, doc_id:PydanticObjectId, newindex: int, user: str = Depends(authenticate)): #Update
     book_objid = await convert_id(book_database, book_name)
-    doc = await check_existence(doc_database, doc_id)
-    writers = doc.writers
-    await check_authority(user, writers)  
+    user_objid = await convert_id(user_database, user)
+    await check_existence(doc_database, doc_id)
     book = await check_existence(book_database, book_objid)
-    documents = book.documents
-    check_directory(doc_id, documents)
+    doc = await check_existence(doc_database, doc_id)
+    await check_directory(book_objid, PydanticObjectId(doc.parent))
+    writers = book.writers
+    await check_authority(user_objid, writers)
     
-    await doc_database.deleteDoc(book_objid, doc_id)
+    await doc_database.resetIndex(doc_id, newindex)
+    return "successfully updated index"
+
+@book_router.delete("/{book_name}/{doc_id}/delete")
+async def deleteDoc(book_name:str, doc_id:PydanticObjectId, user: str = Depends(authenticate)): #Delete
+    book_objid = await convert_id(book_database, book_name)
+    user_objid = await convert_id(user_database, user)
+    doc = await check_existence(doc_database, doc_id)
+    book = await check_existence(book_database, book_objid)
+    writers = book.writers
+    await check_authority(user_objid, writers)  
+    await check_directory(book_objid, PydanticObjectId(doc.parent))
+
+    await doc_database.setIndex_and_delete(book_objid, doc_id)
     return "successfully deleted document"
 
 #CELL CRUD------------------------------------------------------------------------------
@@ -125,7 +139,7 @@ async def newCell(book_name:str, doc_id:PydanticObjectId, body:new_cell, user:st
     await check_directory(doc_id, documents)
     
     cell = Cell(**body.model_dump())
-    cell.parentDoc = str(doc_id)
+    cell.parent = str(doc_id)
     await cell_database.insertCell(doc_id, cell)
     return "successfully created cell"
 
@@ -145,6 +159,20 @@ async def updateCell(book_name:str, doc_id:PydanticObjectId, cell_id:PydanticObj
         
     await cell_database.update(cell_id, body)
     return "successfully updated cell"
+
+@book_router.put("/{book_name}/{doc_id}/{cell_id}/set_index")
+async def setCellIndex(book_name:str, doc_id: PydanticObjectId, cell_id:PydanticObjectId, newindex: int, user: str = Depends(authenticate)): #Update
+    book_objid = await convert_id(book_database, book_name)
+    user_objid = await convert_id(user_database, user)
+    await check_existence(doc_database, doc_id)
+    book = await check_existence(book_database, book_objid)
+    doc = await check_existence(doc_database, doc_id)
+    await check_directory(book_objid, PydanticObjectId(doc.parent))
+    writers = book.writers
+    await check_authority(user_objid, writers)
+    
+    await doc_database.resetIndex(doc_id, newindex)
+    return "successfully updated index"
 
 @book_router.delete("/{book_name}/{doc_id}/{cell_id}")
 async def deleteCell(book_name:str, doc_id:PydanticObjectId, cell_id:PydanticObjectId, user:str=Depends(authenticate)):#update
