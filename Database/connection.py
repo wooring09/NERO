@@ -102,16 +102,34 @@ class Database:
         return True
     
     #Book Database
-    # async def deleteBook(self, book_id:PydanticObjectId):
-    #     book = Book.get(book_id)
-    #     ids = book.documents
-    #     Docs_Id = [PydanticObjectId(id) for id in ids]
-    #     Document.delete_all({"_id": {"$in": Docs_Id}})
-    #     Books_coll.delete_one({"_id":ObjectId(book_id)})
-    #     return
+    async def insertBook(self, body:Document):
+        newbody = await body.create()
+        book_id = str(body.id)
+        user_id = body.writers[0]
+        user = await User.get(PydanticObjectId(user_id))
+        await user.update({"$push": {"followingBooks": book_id}})
+        return
+    
+    async def deleteBook(self, book_id:PydanticObjectId):
+        book = await Book.get(book_id)
+        docs = Doc.find_many({"parentBook":str(book_id)})
+        docs_list = await Doc.find_many({"parentBook":str(book_id)}).to_list()
+        docs_id = [str(doc.id) for doc in docs_list]
+        cells = Cell.find_many({"parentDoc":{"$in": docs_id}})
+        await cells.delete_many()
+        await docs.delete_many()
+        await book.delete()
+        return True
     
     #User Database
-    # async def deleteUser(self, email):
+    async def deleteUser(self, user_id:PydanticObjectId):
+        books = Book.find({"writers": str(user_id)})
+        print(books)
+        await books.update_many({"$pull": {"writers": str(user_id)}})
+        user = await User.get(user_id)
+        await user.delete()
+        return True
+
 
     #Document Database
     async def insertDoc(self, book_id:PydanticObjectId, document:Doc):
@@ -133,7 +151,7 @@ class Database:
             return False
         doc.delete()
 
-        book = await Book.find({"id_": book_id})
+        book = await Book.find({"name": book_id})
         if not book:
             return False
         await book.update({"$pull":{"documents": str(doc_id)}})
@@ -149,7 +167,7 @@ class Database:
         if not doc:
             return False
         
-        await doc.update({"$push": {"cells": cell_id}})
+        await doc.update({"$add": {"cells": cell_id}})
         return True
     
     async def deleteCell(self, doc_id:PydanticObjectId, cell_id:PydanticObjectId):

@@ -24,23 +24,23 @@ async def getAll():
 @book_router.post("/new")
 async def newBook(body:new_book, user: str = Depends(authenticate)): #Create
     user_objid = await convert_id(user_database, user)
-    await check_duplicate(book_database, "id_", body.id_)
+    await check_duplicate(book_database, "name", body.name)
 
     book = Book(**body.model_dump())
     book.writers = [str(user_objid)]
-    await book_database.insert(book)
+    await book_database.insertBook(book)
     return "successfully created book"
 
-@book_router.get("/{book_id}")
-async def getBook(book_id:str): #Read
-    book_objid = await convert_id(book_database,book_id)
+@book_router.get("/{book_name}")
+async def getBook(book_name:str): #Read
+    book_objid = await convert_id(book_database,book_name)
     book = await check_existence(book_database, book_objid)
     return book
 
 
-@book_router.put("/{book_id}/update")
-async def updatetBook(book_id:str, body:update_book, user: str = Depends(authenticate)): #Update
-    book_objid = await convert_id(book_database, book_id)
+@book_router.put("/{book_name}/update")
+async def updatetBook(book_name:str, body:update_book, user: str = Depends(authenticate)): #Update
+    book_objid = await convert_id(book_database, book_name)
     user_objid = await convert_id(user_database, user)
     book = await check_existence(book_database, book_objid)
     writers = book.writers
@@ -49,22 +49,22 @@ async def updatetBook(book_id:str, body:update_book, user: str = Depends(authent
     await book_database.update(book_objid, body)
     return "successfully updated book"
 
-# @book_router.delete("/{book_id}/delete")
-# async def deleteBook(book_id:str, user: str = Depends(authenticate)): #Delete
-#     book_objid = await convert_id(book_database, book_id)
-#     user_objid = await convert_id(user_database, user)
-#     book = await check_existence(book_database, book_objid)
-#     writers = book.writers
-#     await check_authority(user_objid, writers)
+@book_router.delete("/{book_name}/delete")
+async def deleteBook(book_name:str, user: str = Depends(authenticate)): #Delete
+    book_objid = await convert_id(book_database, book_name)
+    user_objid = await convert_id(user_database, user)
+    book = await check_existence(book_database, book_objid)
+    writers = book.writers
+    await check_authority(user_objid, writers)
 
-#     await book_database.delete(book_objid)
-#     return "successfully deleted book"
+    await book_database.deleteBook(book_objid)
+    return "successfully deleted book"
 
 #DOCUMENT CRUD------------------------------------------------------------------------------
 
-@book_router.post("/{book_id}/new")
-async def newDoc(book_id:str, body: new_doc, user: str = Depends(authenticate)): #Create
-    book_objid = await convert_id(book_database, book_id)
+@book_router.post("/{book_name}/new")
+async def newDoc(book_name:str, body: new_doc, user: str = Depends(authenticate)): #Create
+    book_objid = await convert_id(book_database, book_name)
     user_objid = await convert_id(user_database, user)
     book = await check_existence(book_database, book_objid)
     writers = book.writers
@@ -75,9 +75,9 @@ async def newDoc(book_id:str, body: new_doc, user: str = Depends(authenticate)):
     await doc_database.insertDoc(book_objid, doc)
     return "successfully created document"
 
-@book_router.get("/{book_id}/{doc_id}")
-async def getDoc(book_id:str, doc_id:PydanticObjectId): #Read
-    book_objid = await convert_id(book_database, book_id)
+@book_router.get("/{book_name}/{doc_id}")
+async def getDoc(book_name:str, doc_id:PydanticObjectId): #Read
+    book_objid = await convert_id(book_database, book_name)
     doc = await check_existence(doc_database, doc_id)
     book = await check_existence(book_database, book_objid)
     documents = book.documents
@@ -85,9 +85,9 @@ async def getDoc(book_id:str, doc_id:PydanticObjectId): #Read
     
     return doc
 
-@book_router.put("/{book_id}/{doc_id}/update")
-async def updateDoc(book_id:str, doc_id:PydanticObjectId, body: update_doc, user: str = Depends(authenticate)): #Update
-    book_objid = await convert_id(book_database, book_id)
+@book_router.put("/{book_name}/{doc_id}/update")
+async def updateDoc(book_name:str, doc_id:PydanticObjectId, body: update_doc, user: str = Depends(authenticate)): #Update
+    book_objid = await convert_id(book_database, book_name)
     user_objid = await convert_id(user_database, user)
     await check_existence(doc_database, doc_id)
     book = await check_existence(book_database, book_objid)
@@ -99,9 +99,9 @@ async def updateDoc(book_id:str, doc_id:PydanticObjectId, body: update_doc, user
     await doc_database.update(doc_id, body)
     return "successfully updated document"
 
-@book_router.delete("/{book_id}/{doc_id}/delete")
-async def deleteDoc(book_id, doc_id, user: str = Depends(authenticate)): #Delete
-    book_objid = await convert_id(book_database, book_id)
+@book_router.delete("/{book_name}/{doc_id}/delete")
+async def deleteDoc(book_name, doc_id, user: str = Depends(authenticate)): #Delete
+    book_objid = await convert_id(book_database, book_name)
     doc = await check_existence(doc_database, doc_id)
     writers = doc.writers
     await check_authority(user, writers)  
@@ -112,10 +112,10 @@ async def deleteDoc(book_id, doc_id, user: str = Depends(authenticate)): #Delete
     await doc_database.deleteDoc(book_objid, doc_id)
     return "successfully deleted document"
 
-#CELL CRUD
-@book_router.post("/{book_id}/{doc_id}/new")
-async def newCell(book_id:str, doc_id:PydanticObjectId, body:new_cell, user:str=Depends(authenticate)):#create
-    book_objid = await convert_id(book_database, book_id)
+#CELL CRUD------------------------------------------------------------------------------
+@book_router.post("/{book_name}/{doc_id}/new")
+async def newCell(book_name:str, doc_id:PydanticObjectId, body:new_cell, user:str=Depends(authenticate)):#create
+    book_objid = await convert_id(book_database, book_name)
     user_objid = await convert_id(user_database, user)
     doc = await check_existence(doc_database, doc_id)
     book = await check_existence(book_database, book_objid)
@@ -129,9 +129,9 @@ async def newCell(book_id:str, doc_id:PydanticObjectId, body:new_cell, user:str=
     await cell_database.insertCell(doc_id, cell)
     return "successfully created cell"
 
-@book_router.put("/{book_id}/{doc_id}/{cell_id}")
-async def updateCell(book_id:str, doc_id:PydanticObjectId, cell_id:PydanticObjectId, body:update_cell, user:str=Depends(authenticate)):#update
-    book_objid = await convert_id(book_database, book_id)
+@book_router.put("/{book_name}/{doc_id}/{cell_id}")
+async def updateCell(book_name:str, doc_id:PydanticObjectId, cell_id:PydanticObjectId, body:update_cell, user:str=Depends(authenticate)):#update
+    book_objid = await convert_id(book_database, book_name)
     user_objid = await convert_id(user_database, user)
     doc = await check_existence(doc_database, doc_id)
     book = await check_existence(book_database, book_objid)
@@ -146,9 +146,9 @@ async def updateCell(book_id:str, doc_id:PydanticObjectId, cell_id:PydanticObjec
     await cell_database.update(cell_id, body)
     return "successfully updated cell"
 
-@book_router.delete("/{book_id}/{doc_id}/{cell_id}")
-async def deleteCell(book_id:str, doc_id:PydanticObjectId, cell_id:PydanticObjectId, user:str=Depends(authenticate)):#update
-    book_objid = await convert_id(book_database, book_id)
+@book_router.delete("/{book_name}/{doc_id}/{cell_id}")
+async def deleteCell(book_name:str, doc_id:PydanticObjectId, cell_id:PydanticObjectId, user:str=Depends(authenticate)):#update
+    book_objid = await convert_id(book_database, book_name)
     user_objid = await convert_id(user_database, user)
     doc = await check_existence(doc_database, doc_id)
     book = await check_existence(book_database, book_objid)
@@ -164,30 +164,30 @@ async def deleteCell(book_id:str, doc_id:PydanticObjectId, cell_id:PydanticObjec
     return "successfully deleted cell"
 
 #follow
-@book_router.post("/{book_id}/follow")
-async def followbook(book_id, user:str = Depends(authenticate)):
-    book_objid = await convert_id(book_database, book_id)
+@book_router.post("/{book_name}/follow")
+async def followbook(book_name, user:str = Depends(authenticate)):
+    book_objid = await convert_id(book_database, book_name)
     user_objid = await convert_id(user_database, user)
     book = await book_database.get(book_objid)
     writers = book.writers
     if str(user_objid) in writers:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Already followed"
         )
     
     await book_database.followBook(user_objid, book_objid)
     return "successfully followed"
 
-@book_router.post("/{book_id}/unfollow")
-async def unfollowbook(book_id, user:str = Depends(authenticate)):
-    book_objid = await convert_id(book_database, book_id)
+@book_router.post("/{book_name}/unfollow")
+async def unfollowbook(book_name, user:str = Depends(authenticate)):
+    book_objid = await convert_id(book_database, book_name)
     user_objid = await convert_id(user_database, user)
     book = await book_database.get(book_objid)
     writers = book.writers
     if not str(user_objid) in writers:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="Already unfollowed"
         )
     

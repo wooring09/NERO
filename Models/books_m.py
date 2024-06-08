@@ -17,7 +17,7 @@ class Doc(Document):
     cells: Optional[list[str]] = []
 
 class Book(Document):
-    id_: str
+    name: str
     title: str
     writers:Optional[list[str]] = []
     documents:Optional[list[str]] = []
@@ -25,11 +25,11 @@ class Book(Document):
 
 #Basemodel
 class new_book(BaseModel):
-    id_: str
+    name: str
     title:str
 
 class update_book(BaseModel):
-    id_: Optional[str] = None
+    name: Optional[str] = None
     title: Optional[str] = None
 
 class new_doc(BaseModel):

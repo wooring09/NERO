@@ -35,8 +35,8 @@ async def check_duplicate(database, key:str, value:str):
     return True
 
 
-async def convert_id(database, id:str):
-    body = await database.find({"id_":id})
+async def convert_id(database, name:str):
+    body = await database.find({"name":name})
     if not body:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
