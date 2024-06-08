@@ -1,20 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional
 
-from beanie import Document
+from beanie import Document, PydanticObjectId
 
 #Document Model
 class Cell(Document):
     index: Optional[int] = None
     title: str
-    parent: Optional[str] = None
+    parent: Optional[PydanticObjectId] = None
     contents: str
 
 class Doc(Document):
     index: Optional[int] = None
     title: str 
     type: str
-    parent: Optional[str] = None
+    parent: Optional[PydanticObjectId] = None
     related: Optional[list[str]] = []
 
 class Book(Document):
@@ -28,11 +28,9 @@ class new_book(BaseModel):
     title:str
 
 class update_book(BaseModel):
-    name: Optional[str] = None
     title: Optional[str] = None
 
 class new_doc(BaseModel):
-    index: Optional[int] = None
     title: str
     type: str
 
@@ -42,7 +40,6 @@ class update_doc(BaseModel):
     related: Optional[list[str]] = None
 
 class new_cell(BaseModel):
-    index: Optional[int] = None
     title: str
     contents: str
 

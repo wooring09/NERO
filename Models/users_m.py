@@ -17,7 +17,6 @@ class sign_up(BaseModel):
     displayname:str
 
 class update_user(BaseModel):
-    name:Optional[str] = None
     password:Optional[str] = None
     displayname:Optional[str] = None
     

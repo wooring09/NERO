@@ -61,54 +61,53 @@ class Database:
         return True
     
     #follow functions
-    async def followUser(self, user_id:str, target_id:PydanticObjectId):
-        user = await User.get(user_id)
-        target = await User.get(target_id)
+    async def followUser(self, user_name:str, target_name:str):
+        user = await User.find_one({"name": user_name})
+        target = await User.find_one({"name": target_name})
         if not user or not target:
             return False
 
-        await user.update({"$push":{"followingUsers":str(target_id)}})
-        await target.update({"$push":{"followers":str(user_id)}})
+        await user.update({"$push":{"followingUsers":target_name}})
+        await target.update({"$push":{"followers":user_name}})
         return True
     
-    async def unfollowUser(self, user_id:PydanticObjectId, target_id:PydanticObjectId):
-        user = await User.get(user_id)
-        target = await User.get(target_id)
+    async def unfollowUser(self, user_name:str, target_name:str):
+        user = await User.find_one({"name": user_name})
+        target = await User.find_one({"name": target_name})
         if not user or not target:
             return False
 
-        await user.update({"$pull":{"followingUsers":str(target_id)}})
-        await target.update({"$pull":{"followers":str(user_id)}})
+        await user.update({"$pull":{"followingUsers":target_name}})
+        await target.update({"$pull":{"followers":user_name}})
         return True
     
-    async def followBook(self, user_id:PydanticObjectId, book_id:PydanticObjectId):
-        user = await User.get(user_id)
-        target = await Book.get(book_id)
+    async def followBook(self, user_name:str, book_name:str):
+        user = await User.find_one({"name": user_name})
+        target = await Book.find_one({"name": book_name})
         if not user or not target:
             return False
 
-        await user.update({"$push":{"followingBooks":str(book_id)}})
-        await target.update({"$push":{"writers":str(user_id)}})
+        await user.update({"$push":{"followingBooks":book_name}})
+        await target.update({"$push":{"writers":user_name}})
         return True
     
-    async def unfollowBook(self, user_id:PydanticObjectId, book_id:PydanticObjectId):
-        user = await User.get(user_id)
-        target = await Book.get(book_id)
+    async def unfollowBook(self, user_name:str, book_name:str):
+        user = await User.find_one({"name": user_name})
+        target = await Book.find_one({"name": book_name})
         if not user or not target:
             return False
 
-        await user.update({"$pull":{"followingBooks":str(book_id)}})
-        await target.update({"$pull":{"writers":str(user_id)}})
+        await user.update({"$pull":{"followingBooks":book_name}})
+        await target.update({"$pull":{"writers":user_name}})
         return True
     
     #Book Database
-    async def insertBook(self, body:Document):
-        newbody = await body.create()
-        book_id = str(body.id)
-        user_id = body.writers[0]
-        user = await User.get(PydanticObjectId(user_id))
-        await user.update({"$push": {"followingBooks": book_id}})
-        return
+    # async def insertBook(self, body:Document):
+    #     await body.create()
+    #     user_id = body.writers[0]
+    #     user = await User.get(PydanticObjectId(user_id))
+    #     await user.update({"$push": {"followingBooks": body.name}})
+    #     return
     
     async def deleteBook(self, book_id:PydanticObjectId):
         book = await Book.get(book_id)
@@ -171,14 +170,14 @@ class Database:
     #     await doc.update({"$add": {"cells": cell_id}})
     #     return True
     
-    async def deleteCell(self, doc_id:PydanticObjectId, cell_id:PydanticObjectId):
-        cell = await Cell.get(cell_id)
-        if not cell:
-            return False
-        await cell.delete()
+    # async def deleteCell(self, doc_id:PydanticObjectId, cell_id:PydanticObjectId):
+    #     cell = await Cell.get(cell_id)
+    #     if not cell:
+    #         return False
+    #     await cell.delete()
 
-        doc = await Doc.get(doc_id)
-        if not doc:
-            return False
-        await doc.update({"$pull":{"cells": str(cell_id)}})
-        return True
+    #     doc = await Doc.get(doc_id)
+    #     if not doc:
+    #         return False
+    #     await doc.update({"$pull":{"cells": str(cell_id)}})
+    #     return True
