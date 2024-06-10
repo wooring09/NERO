@@ -1,36 +1,52 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from Models.users_m import User, update_user, sign_up
-from Database.connection import Database
-from Authenticate.hash_password import HashPassword
-from Authenticate.authenticate import authenticate, create_token
-from Authenticate.check_exception import check_existence, check_authority, check_directory, check_duplicate, check_existence_with_name
+from models.users import User, update_user, sign_up
+from database.connection import Database, UserCol
+from authenticate.hash_password import HashPassword
+from authenticate.authenticate import authenticate, create_token
+from database.exception_handler import check_existence, check_authority, check_directory, check_duplicate, check_existence_with_name
 
 user_router = APIRouter()
 user_database = Database(User)
 hash_password = HashPassword()
 
 @user_router.post("/signup")
-async def signup(body: sign_up):
-    await check_duplicate(user_database, "name", body.name)
-    await check_duplicate(user_database, "displayname", body.displayname)
+async def signup(body: sign_up) -> dict:
+    # await check_duplicate(user_database, "name", body.name)
+    await UserCol.check_duplicate(
+        UserCol.name==body.name,
+        message="username with supplied user_name already exists"
+    )
 
-    user = User(**body.model_dump())
+    user = UserCol(**body.model_dump())
     user.password = hash_password.hash(user.password)
-    await user_database.insert(user)
-    return "successfully signed up"
+    # await user_database.insert(user)
+    await user.create()
+    return {
+        "message": "user signed up successfully"
+    }
 
 @user_router.post("/signin")
-async def signin(user: OAuth2PasswordRequestForm = Depends()):
-    user_exists = await check_existence_with_name(user_database, user.username)
+async def signin(user: OAuth2PasswordRequestForm = Depends()) -> dict:
+    # user_exists = await check_existence_with_name(user_database, user.username)
+
+    user = await UserCol.check_existence_and_return_document(
+        UserCol.name==user.username,
+        message="user with supplied username doesn't exists",
+        project=UserCol.password
+    )
     
-    if not hash_password.verify(user.password, user_exists.password):
+    if not hash_password.verify(user.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="password is not correct"
+            detail= {
+                "message": "password is not correct"
+            }
         )
+    
     token = create_token(user.username)
-    return{
+    
+    return {
         "access_token": token,
         "token_type": "Bearer"
     }

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from Database.connection import Database
-from Models.books_m import Book, Doc, Cell, new_book,update_book, new_doc, update_doc, new_cell, update_cell
-from Models.users_m import User
-from Authenticate.authenticate import authenticate
-from Authenticate.check_exception import check_existence, check_authority, check_directory, check_duplicate, check_existence_with_name
+from database.connection import Database, BookCol, DocCol, CellCol
+from models.books import Book, Doc, Cell, NewBook,UpdateBook, UpdateDoc, NewCell, UpdateCell
+from models.users import User
+from authenticate.authenticate import authenticate
+from database.exception_handler import check_existence, check_authority, check_directory, check_duplicate, check_existence_with_name, ExceptionHandler
 from beanie import PydanticObjectId, Document
 from pydantic import BaseModel
 
@@ -13,51 +13,104 @@ doc_database = Database(Doc)
 cell_database = Database(Cell)
 user_database = Database(User)
 
+
 @book_router.get("/")
-async def getAll():
-    cursor = await book_database.findAll()
-    books = list(cursor)
+async def get_all() -> list:
+    books = await Book.find_all(limit=10).to_list()
+    print(books)
     return books
 
 #BOOK CRUD----------------------------------------------------------------------------------
 
 @book_router.post("/new")
-async def newBook(body:new_book, user: str = Depends(authenticate)): #Create
-    await check_duplicate(book_database, "name", body.name)
+async def new_book(body: NewBook,
+                   user_name: str = Depends(authenticate))-> dict:
 
-    book = Book(**body.model_dump())
-    await book_database.insert(book)
-    await book_database.followBook(user, book.name)
-    return "successfully created book"
+    await BookCol.check_duplicate(
+        BookCol.name==body.name,
+        message="book with supplied bookname already exists"
+    )
+
+    book = BookCol(**body.model_dump(),
+                   writer=user_name,
+                   followers=[user_name])
+
+    await book.create()
+
+    return {
+        "message": "book created successfully"
+    }
+
+#
+#
+#
 
 @book_router.get("/{book_name}")
-async def getBook(book_name:str): #Read
-    book = await check_existence_with_name(book_database, book_name)
+async def get_book(book_name: str) -> dict:
+
+    book = await BookCol.check_existence_and_return_document(
+        BookCol.name==book_name,
+        message="book_name with supllied id doesn't exist"
+    )
+
     return book
 
+#
+#
+#
 
-@book_router.put("/{book_name}/update")
-async def updatetBook(book_name:str, body:update_book, user: str = Depends(authenticate)): #Update
-    book = await check_existence_with_name(book_database, book_name)
-    writers = book.writers
-    await check_authority(user, writers)
+@book_router.put("/{book_name}/update/overview")
+async def updatet_book_overview(book_name: str,
+                                body: UpdateBook, 
+                                user_name: str = Depends(authenticate)) -> dict:
+    
+    book = await BookCol.check_existence_and_permission(
+        BookCol.name==book_name,
+        user_name=user_name,
+        message_for_exist_exception="book_name with supllied id doesn't exist",
+    )
 
-    await book_database.update(book.id, body)
-    return "successfully updated book"
+    await BookCol.vanish_none_update_fields_and_update(
+        document=book,
+        body=body.model_dump()
+    )
+    
+    return {
+        "message": "book updated successfully"
+    }
+
+#
+#
+#
+
+@book_router.patch("/{book_name}/update/permission")
+async def update_book_permission():
+    return 0
+
+#
+#
+#
 
 @book_router.delete("/{book_name}/delete")
-async def deleteBook(book_name:str, user: str = Depends(authenticate)): #Delete
-    book = await check_existence_with_name(book_database, book_name)
-    writers = book.writers
-    await check_authority(user, writers)
+async def delete_book(book_name: str, 
+                      user_name: str = Depends(authenticate)) -> dict:
+    
+    book = await BookCol.check_existence_and_permission(
+        BookCol.name==book_name,
+        user_name=user_name,
+        message_for_exist_exception="book with supplied book_name doesn't exist"
+    )
 
-    await book_database.deleteBook(book.id)
-    return "successfully deleted book"
+    await book.delete_book_and_associated_documents()
+
+    return {
+        "message": "successfully deleted book"
+    }
 
 #DOCUMENT CRUD------------------------------------------------------------------------------
 
 @book_router.post("/{book_name}/new")
-async def newDoc(book_name:str, body: new_doc, user: str = Depends(authenticate)): #Create
+async def newDoc(book_name:str, body: str, user: str = Depends(authenticate)): #Create
     book = await check_existence_with_name(book_database, book_name)
     writers = book.writers
     await check_authority(user, writers)
@@ -76,7 +129,7 @@ async def getDoc(book_name:str, doc_id:PydanticObjectId): #Read
     return doc
 
 @book_router.put("/{book_name}/{doc_id}/update")
-async def updateDoc(book_name:str, doc_id:PydanticObjectId, body: update_doc, user: str = Depends(authenticate)): #Update
+async def updateDoc(book_name:str, doc_id:PydanticObjectId, body: UpdateDoc, user: str = Depends(authenticate)): #Update
     doc = await check_existence(doc_database, doc_id)
     book = await check_existence_with_name(book_database, book_name)
     await check_directory(book.id, doc.parent)
@@ -110,7 +163,7 @@ async def deleteDoc(book_name:str, doc_id:PydanticObjectId, user: str = Depends(
 
 #CELL CRUD------------------------------------------------------------------------------
 @book_router.post("/{book_name}/{doc_id}/new")
-async def newCell(book_name:str, doc_id:PydanticObjectId, body:new_cell, user:str=Depends(authenticate)):#create
+async def newCell(book_name:str, doc_id:PydanticObjectId, body:NewCell, user:str=Depends(authenticate)):#create
     doc = await check_existence(doc_database, doc_id)
     book = await check_existence_with_name(book_database, book_name)
     await check_directory(book.id, doc.parent)
@@ -123,7 +176,7 @@ async def newCell(book_name:str, doc_id:PydanticObjectId, body:new_cell, user:st
     return "successfully created cell"
 
 @book_router.put("/{book_name}/{doc_id}/{cell_id}")
-async def updateCell(book_name:str, doc_id:PydanticObjectId, cell_id:PydanticObjectId, body:update_cell, user:str=Depends(authenticate)):#update
+async def updateCell(book_name:str, doc_id:PydanticObjectId, cell_id:PydanticObjectId, body:UpdateCell, user:str=Depends(authenticate)):#update
     cell = await check_existence(cell_database, cell_id)
     doc = await check_existence(doc_database, doc_id)
     book = await check_existence_with_name(book_database, book_name)

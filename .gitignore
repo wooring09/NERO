@@ -1,0 +1,5 @@
+venv
+.env
+test.py
+store
+__pychach__

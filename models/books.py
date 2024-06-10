@@ -19,30 +19,32 @@ class Doc(Document):
 
 class Book(Document):
     name: str
-    title: str
-    writers:Optional[list[str]] = []
+    display_name: str
+    writer: str
+    followers: Optional[list[str]] = []
+    image: Optional[str] = None
+
+    class Settings:
+        collection = "books"
+
 
 #Basemodel
-class new_book(BaseModel):
+class NewBook(BaseModel):
     name: str
-    title:str
+    display_name:str
 
-class update_book(BaseModel):
-    title: Optional[str] = None
+class UpdateBook(BaseModel):
+    display_name: Optional[str] = None
 
-class new_doc(BaseModel):
-    title: str
-    type: str
-
-class update_doc(BaseModel):
+class UpdateDoc(BaseModel):
     title: Optional[str] = None
     type: Optional[str] = None
     related: Optional[list[str]] = None
 
-class new_cell(BaseModel):
+class NewCell(BaseModel):
     title: str
     contents: str
 
-class update_cell(BaseModel):
+class UpdateCell(BaseModel):
     title: Optional[str] = None
     contents: Optional[str] = None
