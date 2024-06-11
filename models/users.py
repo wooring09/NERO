@@ -11,12 +11,19 @@ class User(Document):
     following_books:Optional[list[str]] = []
     following_users:Optional[list[str]] = []
 
-class sign_up(BaseModel):
+    class Settings:
+        collection = "users"
+
+class SignUp(BaseModel):
     name:str
     password:str
     display_name:str
 
-class update_user(BaseModel):
+class UpdateUser(BaseModel):
     password:Optional[str] = None
     display_name:Optional[str] = None
     
+# projections
+
+class ReturnUserPassword(BaseModel):
+    password: str

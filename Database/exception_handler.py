@@ -1,8 +1,12 @@
 from beanie import PydanticObjectId, Document
+from pydantic import BaseModel
 from fastapi import HTTPException, status
 
-from typing import Type, TypeVar
+from typing import Type, TypeVar, Union
 from dataclasses import dataclass
+
+class IdProjection(BaseModel):
+    _id: str
 
 def check_existence():
     pass
@@ -44,7 +48,10 @@ class ExceptionHandler(Document):
     @classmethod
     async def vanish_none_update_fields_and_update(cls,
                                                    document: Type[Document], 
-                                                   body: dict) -> None:
+                                                   body: Union[Type[Document], Type[BaseModel]]) -> None:
+        
+
+        body = body
 
         filtered_body =  {k: v for k, v in body.items() if v is not None}
 
@@ -59,18 +66,18 @@ class ExceptionHandler(Document):
         await document.update({"$set": filtered_body})
 
         return None
-
+    
     @classmethod
     async def check_existence_and_return_document(cls,
-                                                  *args,
-                                                  project: str = None, 
-                                                  message: str = "no message", 
-                                                  **kwargs) -> type[Document]:
-        
+                                                *args,
+                                                project: Type[BaseModel] = None, 
+                                                message: str = "no message", 
+                                                **kwargs) -> type[Document]:
+
         query = cls.find_one(*args, **kwargs)
         if project:
             query = query.project(project)
-    
+        
         document = await query
 
         if not document:
@@ -88,17 +95,20 @@ class ExceptionHandler(Document):
     async def check_duplicate(cls,
                               *args, 
                               message: str = "no message", 
-                              project: str = None, 
-                              **kwargs):
+                              project: Type[BaseModel] = None, 
+                              **kwargs) -> type[Document]:
         
         if not project:
-            project = cls._id
+            project = IdProjection
+
+        query = cls.find_one(*args, **kwargs).project(project)
+        if project:
+            query = query.project(project)
         
-        # 중복 문서 검색
-        existing_document = await cls.find_one(*args, **kwargs).project(project)
+        existing_document = await query
         
         if existing_document:
-            # 중복이 있을 경우 예외 발생
+            
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={

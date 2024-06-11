@@ -2,12 +2,14 @@ from pydantic_settings import BaseSettings
 from typing import Optional
 from fastapi import HTTPException, status
 from database.exception_handler import ExceptionHandler
-
-from beanie import init_beanie, PydanticObjectId, Document
-from models.books import Book, Doc, Cell
-from models.users import User
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
+from beanie import init_beanie, PydanticObjectId, Document
+
+from models.books import Book
+from models.docs import Doc, Cell
+from models.users import User
+
 
 class Settings(BaseSettings):
     SECRET_KEY: Optional[str] = None
@@ -20,6 +22,10 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
+#
+#
+#
     
 class UserCol(User, ExceptionHandler):
     pass
@@ -45,7 +51,7 @@ class BookCol(Book, ExceptionHandler):
                                              **kwargs):
         
         document: BookCol = await cls.check_existence_and_return_document(
-            args, kwargs,
+            *args, **kwargs,
             message=message_for_exist_exception,
             project=project
         )
@@ -68,39 +74,11 @@ class BookCol(Book, ExceptionHandler):
 
         # Find all cells associated with the documents
         cells = await CellCol.find({CellCol.parent: {"$in": doc_ids}})
-
-        # Delete all found cells
         await cells.delete_all()
-        
-        # Delete all found documents
         await docs.delete_all()
-        
-        # Delete the book itself
         await self.delete()
 
         return None
-    
-    # async def delete_book_and_associated_documents(self) -> None:
-
-    #     ## docs = Doc.find_many({"parentBook":str(book_id)})
-    #     # docs = DocCol.find_many(Doc.parent_book==book_id)
-    #     # docs_list = await Doc.find_many({"parentBook":str(book_id)}).to_list()
-    #     # docs_id = [str(doc.id) for doc in docs_list]
-    #     # cells = Cell.find_many({"parentDoc":{"$in": docs_id}})
-    #     # await cells.delete_many()
-    #     # await docs.delete_many()
-    #     # await book.delete()
-
-    #     docs: DocCol = await DocCol.find_many(DocCol.parent==self.name)
-    #     doc_ids = [doc.id for doc in docs]
-
-    #     cells: CellCol = await CellCol.find({CellCol.parent:{"$in": doc_ids}})
-
-    #     await cells.delete_all()
-    #     await docs.delete_all()
-    #     await self.delete()
-
-    #     return None
     
 class DocCol(Doc, ExceptionHandler):
     pass
