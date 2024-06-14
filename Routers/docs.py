@@ -8,21 +8,32 @@ from database.connection import (
     BookCol,
     DocCol, 
     CellCol,
+    UserCol,
     Database
+)
+from models.books import (
+    NewBook
+)
+from models.docs import (
+    UpdateDoc
+)
+from models.docs import (
+    NewCell,
+    UpdateCell
 )
 
 
 doc_router = APIRouter()
-book_database = Database(Book)
-doc_database = Database(Doc)
-cell_database = Database(Cell)
-user_database = Database(User)
+book_database = Database(BookCol)
+doc_database = Database(DocCol)
+cell_database = Database(CellCol)
+user_database = Database(UserCol)
 
 
 @doc_router.post("/{book_name}/new")
 async def new_doc(book_name: str, 
-                  body: NewDoc,
-                  user: str = Depends(authenticate)) -> Dict[str, str]:
+                  body: NewBook,
+                  user: str = Depends(authenticate)) -> dict[str, str]:
     # 책의 존재 여부를 확인하고 반환
     book = await BookCol.check_existence_and_return_document(
         BookCol.name == book_name,
@@ -35,7 +46,7 @@ async def new_doc(book_name: str,
         raise HTTPException(status_code=403, detail="You do not have permission to add documents to this book.")
 
     # 문서 생성 및 저장
-    doc = Doc(**body.model_dump())
+    doc = DocCol(**body.model_dump())
     doc.parent = book.id
     await doc_database.set_index_and_insert(doc)
 
@@ -93,13 +104,13 @@ async def newCell(book_name:str, doc_id:PydanticObjectId, body:NewCell, user:str
     writers = book.writers
     await check_authority(user, writers)
     
-    cell = Cell(**body.model_dump())
+    cell = CellCol(**body.model_dump())
     cell.parent = str(doc_id)
     await cell_database.setIndex_and_insert(cell)
     return "successfully created cell"
 
 @doc_router.put("/{book_name}/{doc_id}/{cell_id}")
-async def updateCell(book_name:str, doc_id:PydanticObjectId, cell_id:PydanticObjectId, body:UpdateCell, user:str=Depends(authenticate)):#update
+async def updateCell(book_name:str, doc_id:PydanticObjectId, cell_id: PydanticObjectId, body: UpdateCell, user:str=Depends(authenticate)):#update
     cell = await check_existence(cell_database, cell_id)
     doc = await check_existence(doc_database, doc_id)
     book = await check_existence_with_name(book_database, book_name)
