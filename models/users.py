@@ -12,7 +12,7 @@ class User(Document):
     following_users:Optional[list[str]] = []
 
     class Settings:
-        collection = "users"
+        name = "users"
 
 class SignUp(BaseModel):
     name:str

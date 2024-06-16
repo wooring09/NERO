@@ -10,7 +10,7 @@ class Book(Document):
     image: Optional[str] = None
 
     class Settings:
-        collection = "books"
+        name = "books"
 
 class NewBook(BaseModel):
     name: str

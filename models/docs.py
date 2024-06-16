@@ -9,11 +9,17 @@ class Doc(Document):
     parent: PydanticObjectId = None
     related: Optional[list[str]] = []
 
+    class Setting:
+        name = "docs"
+
 class Cell(Document):
     index: Optional[int] = None
     title: str
     parent: Optional[PydanticObjectId] = None
     contents: str
+
+    class Setting:
+        name = "cells"
 
     
 class UpdateDoc(BaseModel):
