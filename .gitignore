@@ -2,4 +2,5 @@ venv
 .env
 test.py
 store
-__pychach__
+__pycache__/
+*.pyc

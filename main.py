@@ -24,10 +24,9 @@ settings = Settings()
 async def main():
     return RedirectResponse(url="/docs")
 
-
 app.include_router(book_router, prefix="/books")
+app.include_router(doc_router, prefix="/books")
 app.include_router(user_router, prefix="/users")
-app.include_router(doc_router, prefix="/docs")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

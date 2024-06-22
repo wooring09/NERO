@@ -40,9 +40,9 @@ async def signup(body: SignUp) -> dict:
 @user_router.post("/signin")
 async def signin(user: OAuth2PasswordRequestForm = Depends()) -> dict:
 
-    user_doc = await UserCol.check_existence_and_return_document(
+    user_doc = await UserCol.check_existence_and_return(
         UserCol.name==user.username,
-        message="user with supplied username doesn't exists",
+        obj_type="User",
         project=ReturnUserPassword
     )
     
@@ -80,21 +80,21 @@ async def signin(user: OAuth2PasswordRequestForm = Depends()) -> dict:
 async def update_user(body: UpdateUser, 
                       user: str = Depends(authenticate)) -> dict:
     
-    user_exist = await UserCol.check_existence_and_return_document(
+    user_exist = await UserCol.check_existence_and_return(
         UserCol.name == user,
-        message="user with supplied username doesn't exist"
+        obj_type="User"
     )
 
 
     await UserCol.check_duplicate(
         UserCol.name == body.name,
-        message="username with supplied name already exists"
+        obj_type="User"
     )
 
     if body.password:
         body.password = hash_password.hash_password(body.password)
 
-    await UserCol.vanish_none_update_fields_and_update(user_exist, body)
+    await UserCol.vanish_none_and_update(user_exist, body)
     return {"message": "successfully updated"}
 
 # @user_router.delete("/resign")
@@ -113,7 +113,7 @@ async def update_user(body: UpdateUser,
 async def resign(password: str, 
                  user: str = Depends(authenticate)) -> dict:
     
-    user_exist = await UserCol.check_existence_and_return_document(
+    user_exist = await UserCol.check_existence_and_return(
         UserCol.name == user,
         message="user with supplied username doesn't exist"
     )
@@ -149,7 +149,7 @@ async def resign(password: str,
 async def follow_user(target_name: str, 
                       user: str = Depends(authenticate)) -> dict:
     
-    target = await UserCol.check_existence_and_return_document(
+    target = await UserCol.check_existence_and_return(
         UserCol.name == target_name,
         message="user with supplied username doesn't exist"
     )
@@ -188,7 +188,7 @@ async def follow_user(target_name: str,
 async def unfollow_user(target_name: str, 
                         user: str = Depends(authenticate)) -> dict:
     
-    target = await UserCol.check_existence_and_return_document(
+    target = await UserCol.check_existence_and_return(
         UserCol.name == target_name,
         message="user with supplied username doesn't exist"
     )

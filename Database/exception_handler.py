@@ -8,50 +8,15 @@ from dataclasses import dataclass
 class IdProjection(BaseModel):
     _id: str
 
-def check_existence():
-    pass
-def check_authority():
-    pass
-def check_directory():
-    pass
-def check_duplicate():
-    pass
-def check_existence_with_name():
-    pass 
-
 class ExceptionHandler(Document):
 
-    # async def check_existence(database, obj_id:PydanticObjectId):
-    #     obj = await database.get(obj_id)
-    #     if not obj:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_404_NOT_FOUND,
-    #             detail="Object with supplied id doesn't exist"
-    #         )
-    #     return obj
-
-    # async def check_directory(Cobj_id:PydanticObjectId, Pobj_ids):
-    #     if str(Cobj_id) not in Pobj_ids:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_401_UNAUTHORIZED,
-    #             detail="wrong directory"
-    #         )
-    #     return True
-
-    # async def check_authority(id: PydanticObjectId, array):
-    #     if str(id) not in array:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_401_UNAUTHORIZED,
-    #             detail="No authority to access"
-    #         )
-    #     return True
     @classmethod
-    async def vanish_none_update_fields_and_update(cls,
-                                                   document: Type[Document], 
-                                                   body: Union[Type[Document], Type[BaseModel]]) -> None:
+    async def vanish_none_and_update(cls,
+                                    document: Type[Document], 
+                                    body: Type[BaseModel]) -> None:
         
 
-        body = body
+        body = body.model_dump()
 
         filtered_body =  {k: v for k, v in body.items() if v is not None}
 
@@ -68,34 +33,49 @@ class ExceptionHandler(Document):
         return None
     
     @classmethod
-    async def check_existence_and_return_document(cls,
-                                                *args,
-                                                project: Type[BaseModel] = None, 
-                                                message: str = "no message", 
-                                                **kwargs) -> type[Document]:
+    async def check_existence_and_return(cls,
+                                        *args,
+                                        project: Type[BaseModel] = None, 
+                                        obj_type: str = None, 
+                                        **kwargs) -> type[Document]:
 
         query = cls.find_one(*args, **kwargs)
         if project:
             query = query.project(project)
         
-        document = await query
+        body = await query
 
-        if not document:
+        if not body:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "message": message
+                    "message": f"{obj_type} with supplied query doesn't exist"
                 }
             )
         
-        return document
-
+        return body
+    
+    @classmethod
+    async def check_directory(cls, 
+                              parent_id: PydanticObjectId, 
+                              body_id: PydanticObjectId, 
+                              obj_type: str = None) -> type[Document]:
+        
+        if not body_id == parent_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "message": f"{obj_type} with supplied query is in a wrong directory"
+                }
+            )
+        
+        return True
 
     @classmethod
     async def check_duplicate(cls,
                               *args, 
-                              message: str = "no message", 
                               project: Type[BaseModel] = None, 
+                              obj_type: str = None, 
                               **kwargs) -> type[Document]:
         
         if not project:
@@ -112,19 +92,57 @@ class ExceptionHandler(Document):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
-                    "message": message
+                    "message": f"{obj_type} with supplied query doesn't exist"
                 }
             )
         
         return existing_document
 
+class IndexHandler(Document):
 
-    # async def convert_id(database, name:str):
-    #     body = await database.find({"name":name})
-    #     if not body:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_404_NOT_FOUND,
-    #             detail="Can't find object"
-    #         )
-    #     objid = body.id
-    #     return objid
+    @classmethod
+    async def set_index_and_insert(cls, body:Document):
+        max_index = await cls.find_many({"parent": body.parent}).sort("-index").first_or_none()
+        if max_index:
+            body.index = max_index.index + 1
+        else:
+            body.index = 1
+        await body.create()
+        return True
+
+    @classmethod
+    async def set_index_and_delete(cls, body:Document):
+        index = body.index
+        others = cls.find_many({"parent": body.parent, "index": {"$gte":index}})
+        await others.update_many({"$inc": {"index":-1}})
+        await body.delete()
+        return True
+
+    @classmethod
+    async def switch_index(cls, body:Document, new_index:int):
+        index = body.index
+
+        if new_index == index:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "message": "already in the supplied index"
+                }
+            )
+        
+        others_gte_index = cls.find_many({"parent": body.parent, "index": {"$gt":index}})
+        others_gte_new_index = cls.find_many({"parent": body.parent, "index": {"$gte":new_index}})
+
+        #new_index에 해당하는 도큐먼트(몽고DB의)가 없을 경우
+        if not others_gte_new_index:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "message": "index is out of range"
+                }
+            )
+        
+        await others_gte_index.update_many({"$inc": {"index":-1}})
+        await others_gte_new_index.update_many({"$inc": {"index":1}})
+        await body.update({"$set":{"index":new_index}})
+        return True
