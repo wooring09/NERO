@@ -10,8 +10,8 @@ class Doc(Document):
     parent: Optional[PydanticObjectId] = None
     related: Optional[list[str]] = []
 
-    class Settings:
-        collection = "docs"
+    class Setting:
+        name = "docs"
 
 class Cell(Document):
     index: Optional[int] = None
@@ -21,6 +21,9 @@ class Cell(Document):
     
     class Settings:
         collection = "cells"
+
+    class Setting:
+        name = "cells"
 
     
 class UpdateDoc(BaseModel):
