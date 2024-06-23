@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-from Database.connection import Settings
+from database.connection import Settings
 
 SECRET_KEY: Optional[str] = None
 settings = Settings()
